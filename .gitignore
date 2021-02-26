@@ -1,0 +1,18 @@
+#ignore source data
+srcdata/
+
+#ignore output data
+
+output/
+
+#ignore zip files
+*.zip
+
+#ignore text files
+*.txt
+
+#ignore excel
+*.xlsx
+
+#ignore csv files
+*.csv
