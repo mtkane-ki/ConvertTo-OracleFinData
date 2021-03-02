@@ -1,5 +1,6 @@
 Param(
     $outPath,
+    $outFileName,
     $sourcePath
 )
 
@@ -22,7 +23,8 @@ $scriptBlock = { #iterate over every workbook in list of workbooks
     Param(
         $file,
         $pageNumber,
-        $outpath
+        $outpath,
+        $outFileName
     )
     function newMutex {
         Param(
@@ -250,12 +252,12 @@ $scriptBlock = { #iterate over every workbook in list of workbooks
     
         $mutex = newMutex -mutexID "$($item.companyIdentifier)-$($item.orderDateCode)"
 
-        $fileOutPath = "$outpath\FileName $($item.companyIdentifier) $($item.orderDateCode).csv"
+        $fileOutPath = "$outpath\$outFileName $($item.companyIdentifier) $($item.orderDateCode).csv"
         if (!(test-path -path $fileOutPath)) {
             #year/month file doesn't exist yet, creating and adding headers
             waitMutex -mutexRef $mutex
 
-            New-Item -ItemType File -Path $outpath -Name "File Name $($item.companyIdentifier) $($item.orderDateCode).csv" | out-null
+            New-Item -ItemType File -Path $outpath -Name "$outFileName $($item.companyIdentifier) $($item.orderDateCode).csv" | out-null
             Add-Content -path $fileOutPath -Value "tranId,,subsidiary,trandate,postingperiod,,journalItemLine_location,journalItemLine_account,,memo,journalItemLine_debitAmount,journalItemLine_creditAmount,,,,,,,MO_ID,,"
             Add-Content -path $fileOutPath -Value "External ID,Subsidiary,Sub Int ID,Tran Date,Posting Period,Line Office Ext ID,Line Office,Line Account Ext ID,Line MO Date.Doc,Line Memo,Line Debit,Line Credit,Line Net Activity,Line Ending Balance,Line MO Product Name,Line MO Product Code,Line Name,Line MO Source,Line MO Reference,TBD"
             Add-Content -path $fileOutPath -Value ",,,,,,,,,Free-Form Text,,,Currency,Currency,Type TBD,Type TBD,,Free-Form Text,Free-Form Text,,"
@@ -284,6 +286,7 @@ ForEach ($file in $sourceFiles) {
     [void]$runspace.AddArgument($file) #file
     [void]$runspace.AddArgument($i) #$pageNumber
     [void]$runspace.AddArgument($outPath)
+    [void]$runspace.AddArgument($outFileName)
    
     $runspace.RunspacePool = $pool
 
