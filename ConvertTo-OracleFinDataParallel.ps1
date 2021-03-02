@@ -262,11 +262,11 @@ $scriptBlock = { #iterate over every workbook in list of workbooks
 
             releaseMutex -mutexRef $mutex
         }
-        Else {
+        
             waitMutex -mutexRef $mutex
             Add-Content -Path $fileOutPath -Value "$($item.tranId),$($item.companyIdentifier.SubString(0,2)),$($item.subsidiary),$($item.trandate),$($item.postingperiod),$($item.officeCode),$($item.journalItemLine_location),$($item.journalItemLine_account),$($item.datedoc),$($item.memo),$($item.journalItemLine_debitAmount),$($item.journalItemLine_creditAmount),$($item.lineNetActivity),$($item.lineEndingBalance),$($item.lineMoProductName),$($item.lineMoProductCode),$($item.lineName),$($item.lineMoSource),$($item.MO_ID),$($line.tbd)"
             releaseMutex -mutexRef $mutex
-        }
+        
     }
 
     $excelRoot.Quit()
