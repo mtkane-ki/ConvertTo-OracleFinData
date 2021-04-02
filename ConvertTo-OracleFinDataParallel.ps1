@@ -50,6 +50,13 @@ $scriptBlock = { #iterate over every workbook in list of workbooks
         )
         [void]$mutexRef.ReleaseMutex()
     }
+    function Remove-ComObjectReference {
+        Param(
+            $comObjRef
+        )
+        [void][System.Runtime.Interopservices.Marshal]::FinalReleaseComObject($comObjRef)
+        [System.GC]::Collect()
+    }
 
     $columnIntToAlphaCharHash = @{
         1  = "A"
@@ -177,11 +184,14 @@ $scriptBlock = { #iterate over every workbook in list of workbooks
                     }
                     $orderDateCode = Get-Date -format "yyyyMM" -year "20$($splitSrc[1])" -Month $splitSrc[0]
                     $outputLine | Add-Member -NotePropertyName "orderDateCode" -NotePropertyValue $orderDateCode
-                    $outputLine | Add-Member -NotePropertyName "postingperiod" -NotePropertyValue $postingDate.toUpper()
+                    $TextInfo = (Get-Culture).TextInfo
+                    #ORIGINAL LINE $outputLine | Add-Member -NotePropertyName "postingperiod" -NotePropertyValue $postingDate.toUpper()
+                    $outputLine | Add-Member -NotePropertyName "postingperiod" -NotePropertyValue $TextInfo.ToTitleCase($postingDate.toLower())
                 
                     $lastDayOfMonth = [DateTime]::DaysInMonth("20$($splitSrc[1])", $splitSrc[0])
                 
-                    $tranDateFormatted = Get-Date -Year "20$($splitSrc[1])" -Month $splitSrc[0] -Day $lastDayOfMonth -format "MM/dd/yyyy"
+                    $tranDateFormatted = Get-Date -Year "20$($splitSrc[1])" -Month $splitSrc[0] -Day $lastDayOfMonth -format "MM\/dd\/yyyy"
+                    #$tranDateFormatted.ToString("MM\/dd\/yyy")
                     $outputLine | Add-Member -NotePropertyName "tranDate" -NotePropertyValue $tranDateFormatted
                 }
                 "G" {
@@ -258,22 +268,29 @@ $scriptBlock = { #iterate over every workbook in list of workbooks
             waitMutex -mutexRef $mutex
 
             New-Item -ItemType File -Path $outpath -Name "$outFileName $($item.companyIdentifier) $($item.orderDateCode).csv" | out-null
-            Add-Content -path $fileOutPath -Value "tranId,,subsidiary,trandate,postingperiod,,journalItemLine_location,journalItemLine_account,,memo,journalItemLine_debitAmount,journalItemLine_creditAmount,,,,,,,MO_ID,,"
-            Add-Content -path $fileOutPath -Value "External ID,Subsidiary,Sub Int ID,Tran Date,Posting Period,Line Office Ext ID,Line Office,Line Account Ext ID,Line MO Date.Doc,Line Memo,Line Debit,Line Credit,Line Net Activity,Line Ending Balance,Line MO Product Name,Line MO Product Code,Line Name,Line MO Source,Line MO Reference,TBD"
-            Add-Content -path $fileOutPath -Value ",,,,,,,,,Free-Form Text,,,Currency,Currency,Type TBD,Type TBD,,Free-Form Text,Free-Form Text,,"
+            #Add-Content -path $fileOutPath -Value "tranId,,subsidiary,trandate,postingperiod,,journalItemLine_location,journalItemLine_account,,memo,journalItemLine_debitAmount,journalItemLine_creditAmount,,,,,,,MO_ID,,"
+            Add-Content -path $fileOutPath -Value "External ID,Subsidiary,Sub Int ID,Tran Date,Posting Period,Line Office Ext ID,Line Office,Line Account Ext ID,Line MO Date.Doc,Line Memo,Line Debit,Line Credit,Line Net Activity,Line Ending Balance,Line MO Client Name,Line MO Product Code,Line Name,Line MO Source,Line MO Reference"
+            #Add-Content -path $fileOutPath -Value ",,,,,,,,,Free-Form Text,,,Currency,Currency,Type TBD,Type TBD,,Free-Form Text,Free-Form Text,,"
 
             releaseMutex -mutexRef $mutex
         }
         
             waitMutex -mutexRef $mutex
-            Add-Content -Path $fileOutPath -Value "$($item.tranId),$($item.companyIdentifier.SubString(0,2)),$($item.subsidiary),$($item.trandate),$($item.postingperiod),$($item.officeCode),$($item.journalItemLine_location),$($item.journalItemLine_account),$($item.datedoc),$($item.memo),$($item.journalItemLine_debitAmount),$($item.journalItemLine_creditAmount),$($item.lineNetActivity),$($item.lineEndingBalance),$($item.lineMoProductName),$($item.lineMoProductCode),$($item.lineName),$($item.lineMoSource),$($item.MO_ID),$($line.tbd)"
+            Add-Content -Path $fileOutPath -Value "$($item.tranId),$($item.companyIdentifier.SubString(0,2)),$($item.subsidiary),$($item.trandate),$($item.postingperiod),$($item.officeCode),$($item.journalItemLine_location),$($item.journalItemLine_account),$($item.datedoc),$($item.memo),$($item.journalItemLine_debitAmount),$($item.journalItemLine_creditAmount),$($item.lineNetActivity),$($item.lineEndingBalance),$($item.lineMoProductName),$($item.lineMoProductCode),$($item.lineName),$($item.lineMoSource),$($item.MO_ID)"
             releaseMutex -mutexRef $mutex
         
     }
 
-    $excelRoot.Quit()
-    [System.Runtime.Interopservices.Marshal]::ReleaseComObject($excelRoot)
-    Remove-Variable excelRoot
+    $workbook.close($false)
+    $excelRoot.quit()
+  
+    Remove-ComObjectReference -comObjRef $cellText
+    Remove-ComObjectReference -comObjRef $rowCount
+    Remove-ComObjectReference -comObjRef $usedrange
+    Remove-ComObjectReference -comObjRef $worksheet
+    Remove-ComObjectReference -comObjRef $workbook 
+    Remove-ComObjectReference -comObjRef $excelRoot
+    Remove-Variable -Name "excelRoot"
 }
 
 
